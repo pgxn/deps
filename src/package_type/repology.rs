@@ -5,8 +5,8 @@ use reqwest::Url;
 use serde::Deserialize;
 use serde::Serialize;
 
-use crate::operating_system::OperatingSystem;
 use crate::error::{Error, Result};
+use crate::operating_system::OperatingSystem;
 
 pub struct RepologyClient {
     client: reqwest::Client,
@@ -66,11 +66,14 @@ impl RepologyClient {
             let status_code = resp.status().as_u16();
             let message = resp.text().await.unwrap_or_default();
 
-            return Err(Error::FailedRequest { status_code , message });
+            return Err(Error::FailedRequest {
+                status_code,
+                message,
+            });
         }
 
         let mut projects: Vec<Project> = resp.json().await?;
-        
+
         projects.retain(|project| {
             package_managers.iter().any(|package_manager| {
                 package_manager

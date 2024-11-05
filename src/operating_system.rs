@@ -3,17 +3,24 @@ use std::{
     io::{BufRead, BufReader},
 };
 
-use crate::{error::{Error, Result}, package_type::repology::RepologyClient};
+use crate::{
+    error::{Error, Result},
+    package_type::repology::RepologyClient,
+};
 
 pub async fn install_command(package_name: &str, os: OperatingSystem) -> Result<Vec<String>> {
     let client = RepologyClient::new();
 
     let packages = client.get_projects(package_name, os).await?;
-    let package_name = packages.into_iter().next().and_then(|package| package.srcname).ok_or_else(|| Error::UnknownPackage(package_name.into()))?;
+    let package_name = packages
+        .into_iter()
+        .next()
+        .and_then(|package| package.srcname)
+        .ok_or_else(|| Error::UnknownPackage(package_name.into()))?;
 
     Ok(os
         .package_managers()
-        .into_iter()
+        .iter()
         .map(|package_manager| package_manager.install(&package_name))
         .collect())
 }
@@ -38,8 +45,8 @@ impl OperatingSystem {
     }
 
     /// Detect the current operating system, if it's supported
-    pub fn detect() -> Option<OperatingSystem> {
-        if cfg!(target_os = "linux") {
+    pub fn detect() -> Result<OperatingSystem> {
+        let os = if cfg!(target_os = "linux") {
             Self::detect_linux_distribution()
         } else if cfg!(windows) {
             Some(OperatingSystem::Windows)
@@ -47,7 +54,9 @@ impl OperatingSystem {
             Some(OperatingSystem::Mac)
         } else {
             None
-        }
+        };
+
+        os.ok_or(Error::UnsupportedOperatingSystem)
     }
 
     /// Check `os-release` to detect current Linux distro
