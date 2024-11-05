@@ -15,5 +15,7 @@ pub enum Error {
     #[error("{0}")]
     ParseUrl(#[from] url::ParseError),
     #[error("Request failed: {status_code} {message}")]
-    FailedRequest { status_code: u16, message: String }
+    FailedRequest { status_code: u16, message: String },
+    #[error("Currently running in an unsupported operating system")]
+    UnsupportedOperatingSystem,
 }

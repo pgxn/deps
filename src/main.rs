@@ -1,6 +1,6 @@
 pub mod error;
-pub mod package_type;
 pub mod operating_system;
+pub mod package_type;
 
 use std::{str::FromStr, sync::LazyLock};
 

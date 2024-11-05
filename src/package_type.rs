@@ -1,10 +1,12 @@
-//!
-
 pub mod repology;
 
 use async_trait::async_trait;
+use repology::RepologyClient;
 
-use crate::error::Result;
+use crate::{
+    error::{Error, Result},
+    operating_system::OperatingSystem,
+};
 
 #[async_trait]
 pub trait PackageType: Send + Sync {
@@ -55,8 +57,27 @@ impl PackageType for Generic {
         "generic"
     }
 
-    async fn resolve_package(&self, _: &str) -> Result<String> {
-        todo!()
+    async fn resolve_package(&self, package_name: &str) -> Result<String> {
+        let os = OperatingSystem::detect()?;
+        let client = RepologyClient::new();
+
+        // All matching projects for the given package name
+        let projects = client.get_projects(package_name, os).await?;
+
+        let package_name = projects
+            .into_iter()
+            .next()
+            .and_then(|project| project.srcname)
+            .ok_or_else(|| Error::PackageNotFound(package_name.into()))?;
+
+        let install_command = os
+            .package_managers()
+            .iter()
+            .map(|package_manager| package_manager.install(&package_name))
+            .next()
+            .ok_or_else(|| Error::PackageNotFound(package_name))?;
+
+        Ok(install_command)
     }
 }
 
