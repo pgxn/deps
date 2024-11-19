@@ -1,41 +1,31 @@
-pub mod error;
-pub mod operating_system;
-pub mod package_type;
+use pgxn_deps::{error::Result, operating_system::OperatingSystem, resolve_package};
 
-use std::{str::FromStr, sync::LazyLock};
+use argh::FromArgs;
 
-use package_type::{Cargo, Generic, PackageType, Pgxn, Postgres};
-use purl::GenericPurl;
+#[derive(FromArgs)]
+/// Obtain the installation command for a given purl package, according to PGXNv2 specs
+struct Command {
+    /// operating system to install the package on
+    #[argh(option)]
+    os: Option<OperatingSystem>,
 
-use crate::error::{Error, Result};
-
-static SUPPORTED_PACKAGE_TYPES: LazyLock<Vec<Box<dyn PackageType>>> = LazyLock::new(|| {
-    vec![
-        Box::new(Pgxn),
-        Box::new(Generic),
-        Box::new(Cargo),
-        Box::new(Postgres),
-    ]
-});
-
-/// Given a PURL, return the installation command to install the given package.
-pub async fn resolve_package(purl: &str) -> Result<String> {
-    let purl = GenericPurl::<String>::from_str(purl)?;
-
-    let package_type = SUPPORTED_PACKAGE_TYPES
-        .iter()
-        .find(|supported_package_type| supported_package_type.name() == purl.package_type())
-        .ok_or_else(|| Error::UnknownPackage(purl.package_type().to_string()))?;
-
-    package_type.resolve_package(purl.name()).await
+    /// a purl string
+    #[argh(positional)]
+    purl: String,
 }
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    resolve_package("pkg:cargo/cargo-pgrx").await?;
-    resolve_package("pkg:postgres/plpgsql").await?;
-    resolve_package("pkg:pgxn/pgtap").await?;
-    resolve_package("pkg:generic/curl").await?;
+    let command: Command = argh::from_env();
+
+    let operating_system = match command.os {
+        Some(os) => os,
+        None => OperatingSystem::detect()?,
+    };
+
+    let installation_command = resolve_package(&command.purl, operating_system).await?;
+
+    println!("{installation_command}");
 
     Ok(())
 }
