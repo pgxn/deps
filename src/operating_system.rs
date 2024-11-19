@@ -3,27 +3,7 @@ use std::{
     io::{BufRead, BufReader},
 };
 
-use crate::{
-    error::{Error, Result},
-    package_type::repology::RepologyClient,
-};
-
-pub async fn install_command(package_name: &str, os: OperatingSystem) -> Result<Vec<String>> {
-    let client = RepologyClient::new();
-
-    let packages = client.get_projects(package_name, os).await?;
-    let package_name = packages
-        .into_iter()
-        .next()
-        .and_then(|package| package.srcname)
-        .ok_or_else(|| Error::UnknownPackage(package_name.into()))?;
-
-    Ok(os
-        .package_managers()
-        .iter()
-        .map(|package_manager| package_manager.install(&package_name))
-        .collect())
-}
+use crate::error::{Error, Result};
 
 #[derive(Debug, Clone, Copy)]
 pub enum OperatingSystem {
