@@ -1,6 +1,8 @@
 use std::{
     fs,
     io::{BufRead, BufReader},
+    result::Result as StdResult,
+    str::FromStr,
 };
 
 use crate::error::{Error, Result};
@@ -11,6 +13,20 @@ pub enum OperatingSystem {
     Debian,
     RedHat,
     Windows,
+}
+
+impl FromStr for OperatingSystem {
+    type Err = String;
+
+    fn from_str(s: &str) -> StdResult<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "mac" | "osx" | "macos" => Ok(OperatingSystem::Mac),
+            "debian" => Ok(OperatingSystem::Debian),
+            "redhat" | "rhel" => Ok(OperatingSystem::RedHat),
+            "windows" | "win" => Ok(OperatingSystem::Windows),
+            _ => Err(format!("Invalid operating system: '{}'", s)),
+        }
+    }
 }
 
 impl OperatingSystem {
