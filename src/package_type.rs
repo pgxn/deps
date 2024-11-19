@@ -14,7 +14,21 @@ pub trait PackageType: Send + Sync {
     fn name(&self) -> &'static str;
 
     /// Obtain the installation command for the given package on this package type
-    async fn resolve_package(&self, package_name: &str) -> Result<String>;
+    /// and operating system.
+    async fn resolve_package_for_operating_system(
+        &self,
+        package_name: &str,
+        os: OperatingSystem,
+    ) -> Result<String>;
+
+    /// Obtain the installation command for the given package on this package type.
+    /// Auto-detects the current operating system.
+    async fn resolve_package(&self, package_name: &str) -> Result<String> {
+        let os = OperatingSystem::detect()?;
+
+        self.resolve_package_for_operating_system(package_name, os)
+            .await
+    }
 }
 
 /// PGXN package type
@@ -35,7 +49,11 @@ impl PackageType for Pgxn {
         "pgxn"
     }
 
-    async fn resolve_package(&self, package_name: &str) -> Result<String> {
+    async fn resolve_package_for_operating_system(
+        &self,
+        package_name: &str,
+        _: OperatingSystem,
+    ) -> Result<String> {
         Ok(format!("pgxn install {package_name}"))
     }
 }
@@ -46,7 +64,11 @@ impl PackageType for Postgres {
         "postgres"
     }
 
-    async fn resolve_package(&self, package_name: &str) -> Result<String> {
+    async fn resolve_package_for_operating_system(
+        &self,
+        package_name: &str,
+        _: OperatingSystem,
+    ) -> Result<String> {
         Ok(format!("pgxn install {package_name}"))
     }
 }
@@ -57,8 +79,11 @@ impl PackageType for Generic {
         "generic"
     }
 
-    async fn resolve_package(&self, package_name: &str) -> Result<String> {
-        let os = OperatingSystem::detect()?;
+    async fn resolve_package_for_operating_system(
+        &self,
+        package_name: &str,
+        os: OperatingSystem,
+    ) -> Result<String> {
         let client = RepologyClient::new();
 
         // All matching projects for the given package name
@@ -87,7 +112,11 @@ impl PackageType for Cargo {
         "cargo"
     }
 
-    async fn resolve_package(&self, package_name: &str) -> Result<String> {
+    async fn resolve_package_for_operating_system(
+        &self,
+        package_name: &str,
+        _: OperatingSystem,
+    ) -> Result<String> {
         Ok(format!("cargo install {package_name}"))
     }
 }
