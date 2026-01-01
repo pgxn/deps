@@ -18,6 +18,12 @@ cover:
 docs: target/doc/pgxn_deps/index.html
 	open $<
 
+.PHONY: update-deps # Update dependencies to the latest versions.
+update-deps:
+	@cargo install cargo-edit
+	@cargo upgrade -i allow --recursive true
+	@cargo update --recursive
+
 target/doc/pgxn_deps/index.html: $(shell find . -name \*.rs)
 	cargo doc
 

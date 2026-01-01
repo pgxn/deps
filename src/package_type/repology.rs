@@ -1,7 +1,7 @@
 use std::ops::Not;
 
-use reqwest::header::USER_AGENT;
 use reqwest::Url;
+use reqwest::header::USER_AGENT;
 use serde::Deserialize;
 use serde::Serialize;
 
